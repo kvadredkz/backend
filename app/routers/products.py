@@ -67,6 +67,34 @@ def get_product(
 
     return product
 
+@router.get("/{product_id}/analytics", response_model=List[schemas.Analytics])
+def get_product_analytics(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_shop: models.Shop = Depends(auth.get_current_shop)
+):
+    """Get analytics for a product with blogger details"""
+    # Check if the product belongs to the current shop
+    product = db.query(models.Product)\
+        .filter(
+            models.Product.id == product_id,
+            models.Product.shop_id == current_shop.id
+        ).first()
+    
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found"
+        )
+    
+    # Query analytics with joined blogger details
+    analytics = db.query(models.Analytics)\
+        .join(models.Blogger)\
+        .filter(models.Analytics.product_id == product_id)\
+        .all()
+    
+    return analytics
+
 @router.post("/", response_model=schemas.Product)
 def create_product(
     product: schemas.ProductCreate,

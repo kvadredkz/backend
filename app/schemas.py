@@ -83,6 +83,7 @@ class Analytics(AnalyticsBase):
     id: int
     created_at: datetime
     updated_at: Optional[datetime]
+    blogger: Optional[Blogger] = None  # Include blogger details
 
     class Config:
         from_attributes = True
