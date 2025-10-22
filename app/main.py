@@ -1,15 +1,32 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import List
 from . import models, schemas, auth
 from .database import engine, get_db
 from sqlalchemy import and_, func
+from .routers import shops, products, affiliate_links, bloggers
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="DeltaHub API")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # In production, replace with your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(shops.router)
+app.include_router(products.router)
+app.include_router(affiliate_links.router)
+app.include_router(bloggers.router)
 
 # Authentication endpoints
 @app.post("/token", response_model=schemas.Token)
@@ -26,27 +43,16 @@ async def login_for_access_token(
         )
     access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = auth.create_access_token(
-        data={"sub": shop.email}, expires_delta=access_token_expires
+        data={"sub": shop.email, "shop_id": shop.id},
+        expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-# Shop endpoints
-@app.post("/shops/", response_model=schemas.Shop)
-def create_shop(shop: schemas.ShopCreate, db: Session = Depends(get_db)):
-    db_shop = db.query(models.Shop).filter(models.Shop.email == shop.email).first()
-    if db_shop:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    hashed_password = auth.get_password_hash(shop.password)
-    db_shop = models.Shop(
-        email=shop.email,
-        name=shop.name,
-        description=shop.description,
-        hashed_password=hashed_password
-    )
-    db.add(db_shop)
-    db.commit()
-    db.refresh(db_shop)
-    return db_shop
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "shop_id": shop.id,
+        "email": shop.email,
+        "name": shop.name
+    }
 
 # Product endpoints
 @app.post("/products/", response_model=schemas.Product)

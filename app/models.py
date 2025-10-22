@@ -36,6 +36,7 @@ class Product(Base):
     shop = relationship("Shop", back_populates="products")
     orders = relationship("Order", back_populates="product")
     analytics = relationship("Analytics", back_populates="product")
+    affiliate_links = relationship("AffiliateLink", back_populates="product")
 
 class Blogger(Base):
     __tablename__ = "bloggers"
@@ -49,6 +50,7 @@ class Blogger(Base):
 
     orders = relationship("Order", back_populates="blogger")
     analytics = relationship("Analytics", back_populates="blogger")
+    affiliate_links = relationship("AffiliateLink", back_populates="blogger")
 
 class Order(Base):
     __tablename__ = "orders"
@@ -81,3 +83,16 @@ class Analytics(Base):
 
     product = relationship("Product", back_populates="analytics")
     blogger = relationship("Blogger", back_populates="analytics")
+
+class AffiliateLink(Base):
+    __tablename__ = "affiliate_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    blogger_id = Column(Integer, ForeignKey("bloggers.id"))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    product = relationship("Product", back_populates="affiliate_links")
+    blogger = relationship("Blogger", back_populates="affiliate_links")

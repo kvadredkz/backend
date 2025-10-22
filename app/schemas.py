@@ -90,6 +90,32 @@ class Analytics(AnalyticsBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    shop_id: int
+    email: str
+    name: str
 
 class TokenData(BaseModel):
     email: Optional[str] = None
+
+class AffiliateLinkBase(BaseModel):
+    product_id: int
+    blogger_id: int
+
+class AffiliateLinkCreate(AffiliateLinkBase):
+    pass
+
+class AffiliateLink(AffiliateLinkBase):
+    id: int
+    code: str
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+class AffiliateLinkDetail(AffiliateLink):
+    product: Product
+    blogger: Blogger
+
+    class Config:
+        from_attributes = True
