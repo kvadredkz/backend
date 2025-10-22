@@ -1,6 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Response
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from typing import List
+import shutil
+import os
+from pathlib import Path
+import mimetypes
 
 from .. import models, schemas, auth
 from ..database import get_db
@@ -9,6 +14,10 @@ router = APIRouter(
     prefix="/products",
     tags=["products"]
 )
+
+# Create uploads directory if it doesn't exist
+UPLOAD_DIR = Path("uploads/products")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.get("/", response_model=List[schemas.Product])
 def get_products(
@@ -94,6 +103,58 @@ def get_product_analytics(
         .all()
     
     return analytics
+
+@router.post("/upload-image")
+async def upload_product_image(
+    image: UploadFile = File(...),
+    current_shop: models.Shop = Depends(auth.get_current_shop)
+):
+    """Upload a product image"""
+    # Validate file type
+    if not image.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image"
+        )
+    
+    # Create unique filename using shop ID and original filename
+    filename = f"{current_shop.id}_{image.filename}"
+    file_path = UPLOAD_DIR / filename
+    
+    # Save the file
+    try:
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Could not upload image: {str(e)}"
+        )
+    
+    # Return the URL path to the image
+    return {"image_url": f"/products/images/{filename}"}
+
+@router.get("/images/{filename}")
+async def get_product_image(filename: str):
+    """Get a product image by filename"""
+    file_path = UPLOAD_DIR / filename
+    
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Image not found"
+        )
+    
+    # Determine content type
+    content_type, _ = mimetypes.guess_type(filename)
+    if not content_type:
+        content_type = "application/octet-stream"
+    
+    return FileResponse(
+        path=file_path,
+        media_type=content_type,
+        filename=filename
+    )
 
 @router.post("/", response_model=schemas.Product)
 def create_product(

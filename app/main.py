@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from sqlalchemy.orm import Session
 from datetime import timedelta
 from typing import List
@@ -33,6 +35,7 @@ app.add_middleware(
     expose_headers=["*"],
     max_age=3600  # Cache preflight requests for 1 hour
 )
+
 
 # Include routers
 app.include_router(shops.router)

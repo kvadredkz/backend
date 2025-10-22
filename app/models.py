@@ -30,6 +30,7 @@ class Product(Base):
     name = Column(String, index=True)
     description = Column(String)
     price = Column(Float)
+    image_url = Column(String, nullable=True)  # URL to the uploaded image
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
