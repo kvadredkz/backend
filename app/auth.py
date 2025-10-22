@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -9,6 +8,8 @@ from . import models, schemas
 from .database import get_db
 import os
 from dotenv import load_dotenv
+import hashlib
+import hmac
 
 load_dotenv()
 
@@ -17,20 +18,38 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-def verify_password(plain_password: str, hashed_password: str):
-    # Truncate password to 72 bytes if necessary
-    if isinstance(plain_password, str):
-        plain_password = plain_password.encode('utf-8')[:72].decode('utf-8')
-    return pwd_context.verify(plain_password, hashed_password)
+def get_password_hash(password: str) -> str:
+    """Hash a password for storing."""
+    salt = os.urandom(32)  # Generate a random 32 byte salt
+    key = hashlib.pbkdf2_hmac(
+        'sha256',  # Hash algorithm
+        password.encode('utf-8'),  # Convert the password to bytes
+        salt,  # Provide the salt
+        100000,  # Number of iterations
+    )
+    # Store salt and key together
+    return salt.hex() + ':' + key.hex()
 
-def get_password_hash(password: str):
-    # Truncate password to 72 bytes if necessary
-    if isinstance(password, str):
-        password = password.encode('utf-8')[:72].decode('utf-8')
-    return pwd_context.hash(password)
+def verify_password(plain_password: str, stored_password: str) -> bool:
+    """Verify a stored password against one provided by user"""
+    try:
+        salt_str, key_str = stored_password.split(':')
+        salt = bytes.fromhex(salt_str)
+        stored_key = bytes.fromhex(key_str)
+        
+        # Use the same parameters as used for hashing
+        new_key = hashlib.pbkdf2_hmac(
+            'sha256',
+            plain_password.encode('utf-8'),
+            salt,
+            100000,
+        )
+        
+        return hmac.compare_digest(new_key, stored_key)
+    except Exception:
+        return False
 
 def authenticate_shop(db: Session, email: str, password: str):
     shop = db.query(models.Shop).filter(models.Shop.email == email).first()
