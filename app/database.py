@@ -6,7 +6,7 @@ import os
 
 load_dotenv()
 
-POSTGRES_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/deltahub")
+POSTGRES_URL = os.getenv("DATABASE_URL", "postgresql://deltahub:123@localhost:5432/deltahub")
 
 engine = create_engine(POSTGRES_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
