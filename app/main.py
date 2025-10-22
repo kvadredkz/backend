@@ -9,7 +9,7 @@ from typing import List
 from . import models, schemas, auth
 from .database import engine, get_db
 from sqlalchemy import and_, func
-from .routers import shops, products, affiliate_links, bloggers
+from .routers import shops, products, affiliate_links, bloggers, admin
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -42,6 +42,7 @@ app.include_router(shops.router)
 app.include_router(products.router)
 app.include_router(affiliate_links.router)
 app.include_router(bloggers.router)
+app.include_router(admin.router)
 
 # Authentication endpoints
 @app.post("/token", response_model=schemas.Token)
