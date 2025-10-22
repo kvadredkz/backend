@@ -21,9 +21,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def verify_password(plain_password: str, hashed_password: str):
+    # Truncate password to 72 bytes if necessary
+    if isinstance(plain_password, str):
+        plain_password = plain_password.encode('utf-8')[:72].decode('utf-8')
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str):
+    # Truncate password to 72 bytes if necessary
+    if isinstance(password, str):
+        password = password.encode('utf-8')[:72].decode('utf-8')
     return pwd_context.hash(password)
 
 def authenticate_shop(db: Session, email: str, password: str):
