@@ -20,6 +20,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://deltahub-frontend.onrender.com",
+        "https://www.follox.kz",
         "http://localhost:3000",  # For local development
         "http://localhost:5173"   # For local Vite development
     ],
